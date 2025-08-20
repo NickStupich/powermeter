@@ -21,15 +21,23 @@ void setup() {
 }
 
 
+//zero value: 70,000
+//10 pounds = 191,000
+
+long tare = 70000;
+float countToKg = (10/2.2) / 121000.0; //10 pound weight
+
 int count = 0;
 void loop() {
 
   if (scale.is_ready()) {
     count++;
     long reading = scale.read();
+    float kg = (reading - tare) * countToKg;
     //Serial.print("HX711 reading: ");
     if(count % 20 == 0) {
-      Serial.println(reading);
+      // Serial.println(reading);
+      Serial.println(kg);
     }
     if(count % 100 == 0) {
       Serial.print("SPS: ");
