@@ -1,3 +1,4 @@
+#include "Adafruit_TinyUSB.h"
 #include <bluefruit.h>
 
 BLEService        power_service = BLEService(UUID16_SVC_CYCLING_POWER);
@@ -68,7 +69,7 @@ void setup()
   start_time = millis();
 
   Serial.begin(115200);
-  while ( !Serial ) delay(10);   // for nrf52840 with native usb
+  // while ( !Serial ) delay(10);   // for nrf52840 with native usb
 
   Serial.println("Bluefruit52 HRM Example");
   Serial.println("-----------------------\n");
@@ -222,7 +223,7 @@ void update_adv_loop() {
 
   if(millis() - last_call >= 100) {
     last_call = millis();
-    digitalToggle(LED_RED);
+    // digitalToggle(LED_RED);
     
     if ( Bluefruit.connected() ) {
       updatePowerMeasureChar(true);
