@@ -16,6 +16,22 @@ void start_torque_sensor(void)
 	
 }
 
+void tare_torque_sensor(void) {
+	long reading = scale.read_average(50);
+	calibration.strain_gauge_offset = reading;
+	Serial.print("Strain gauge offset calibrated to: "); Serial.println(reading);
+	save_calibration();
+}
+
+void calibrate_torque_sensor(uint16_t current_grams) {
+	long reading = scale.read_average(50);
+
+	float current_newtons = (float)current_grams * 9.8 / 1000.0;
+	calibration.strain_gauge_counts_to_newtons = (reading - calibration.strain_gauge_offset) / current_newtons;
+
+	save_calibration();
+}
+
 
 //returns true if it has a reading, else false
 bool get_crank_force(float *force_newtons)
@@ -24,11 +40,8 @@ bool get_crank_force(float *force_newtons)
 		return false;
   
 	long reading = scale.read();
-	long tare = 37000;
-	// Serial.print("torque raw: "); Serial.println(reading);
-	float countToKg = (10/2.2) / 121000.0; //10 pound weight
-  float kg = (reading - tare) * countToKg;
-	*force_newtons = kg * 9.8;
+	float newtons = (reading - calibration.strain_gauge_offset) * calibration.strain_gauge_counts_to_newtons;
+	*force_newtons = newtons;
 	// Serial.print("Force: ");	Serial.println(*force_newtons);
 	
 	return true;

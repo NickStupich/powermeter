@@ -5,6 +5,7 @@
 
 #include "HX711.h"
 
+void data_storage_init(); //TODO: why is this needed??
 
 const int LOADCELL_DOUT_PIN = 9;
 const int LOADCELL_SCK_PIN = 10;
@@ -25,16 +26,30 @@ struct power_state_t {
   long last_timestamp = 0;
 };
 
+struct calibration_settings_t {
+  float gyro_offset = 0;
+  float strain_gauge_offset = 37000;
+  float strain_gauge_counts_to_newtons = 0.000368144;
+};
+
 
 sensor_state_t sensors;
 power_state_t power;
+calibration_settings_t calibration;
+
 
 void setup() {
   Serial.begin(115200);
 
   for(int i=0;i<100 && !Serial;i++)
+  // while(!Serial)
     delay(10); // will pause Zero, Leonardo, etc until serial console opens. but max 1 second if there's no serial link
   
+  Serial.println("Nick's Powermeter!");
+
+  data_storage_init();
+  load_calibration();
+
   //start in active mode
   start_ble_advertising();
   

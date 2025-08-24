@@ -80,13 +80,24 @@ void get_imu_reading(sensors_event_t *accel, sensors_event_t *gyro)
 {
   sensors_event_t temp;
   mpu.getEvent(accel, gyro, &temp);
-
-
 }
 
-void calibrate_imu(void)
+void zero_imu(void)
 {
+  //calibration.gyro_offset
+  int n = 50;
+  float sum = 0;
+  for(int i=0;i<n;i++) {
+    sensors_event_t temp, accel, gyro;
+    mpu.getEvent(&accel, &gyro, &temp);
+    sum += gyro.gyro.y;
+  }
 
+  float average = sum / n;
+  Serial.print("Gyro calibration result: "); Serial.println(average, 4);
+  calibration.gyro_offset = average;
+  
+	save_calibration();
 }
 
 void setup_motion_detection_wakeup_pin(void) 

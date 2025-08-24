@@ -18,7 +18,7 @@ void calculate_power(sensor_state_t sensors, power_state_t *power)
 
   unsigned long elapsed_micros = current_call_time_micros - last_call_time_micros;
 
-  float gyro_rad_per_s = sensors.gyro.gyro.y;
+  float gyro_rad_per_s = sensors.gyro.gyro.y - calibration.gyro_offset;
 
   power->power_watts_raw = 2.0 * CRANK_LENGTH_MM * gyro_rad_per_s * sensors.force_newtons / 1000.0;
   power->power_watts_smoothed = power->power_watts_smoothed * (1 - smooth_power_EMA_COEF) + power->power_watts_raw * smooth_power_EMA_COEF;
@@ -32,7 +32,7 @@ void calculate_power(sensor_state_t sensors, power_state_t *power)
 
   last_call_time_micros = current_call_time_micros;
 
-  if(true) {  
+  if(false) {  
     // Serial.print(sensors.gyro.gyro.x); Serial.print("\t");
     // Serial.print(sensors.gyro.gyro.y);Serial.print("\t");
     // Serial.print(sensors.gyro.gyro.z);Serial.print("\t");

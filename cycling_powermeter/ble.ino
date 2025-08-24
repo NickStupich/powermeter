@@ -4,6 +4,8 @@ BLECharacteristic power_measure_char = BLECharacteristic(UUID16_CHR_CYCLING_POWE
 BLECharacteristic power_feature_char = BLECharacteristic(UUID16_CHR_CYCLING_POWER_FEATURE);
 BLECharacteristic sensor_loc_char = BLECharacteristic(UUID16_CHR_SENSOR_LOCATION);
 
+BLECharacteristic calibration_char = BLECharacteristic(0x1000);
+
 //TODO: useful?
 BLEBas blebas;    // BAS (Battery Service) helper class instance
 
@@ -145,6 +147,48 @@ void setupPM(void)
   sensor_loc_char.begin();
   unsigned char slBuffer[1] = {sensorlocation};
   sensor_loc_char.write(slBuffer, 1);
+
+  calibration_char.setProperties(CHR_PROPS_WRITE);
+  calibration_char.setPermission(SECMODE_OPEN, SECMODE_OPEN);
+  calibration_char.setWriteCallback(calibration_write_callback);
+  calibration_char.setMaxLen(20);
+  calibration_char.begin();
+}
+
+void calibration_write_callback(uint16_t conn_hdl, BLECharacteristic* chr, uint8_t* data, uint16_t len)
+{
+  uint16_t weight_grams;
+
+  Serial.println("calibration_write_callback()");
+  if(len == 0) {
+    Serial.println("Length is 0");
+    return;
+  }
+
+  switch(data[0]) {
+    case 0:
+      Serial.println("Zero command");
+      tare_torque_sensor();
+      zero_imu();
+      break;
+      
+    case 1:
+      Serial.println("Weight calibration command");
+      if(len < 3) {
+        Serial.println("Data too short");
+        return;
+      }
+      weight_grams = ((uint16_t)data[1]) << 8 | data[2];
+      Serial.print("Calibration weight: ");
+      Serial.println(weight_grams);
+      calibrate_torque_sensor(weight_grams);
+      break;
+
+    default:
+      Serial.print("Unrecognized command: ");
+      Serial.println(data[0]);
+  }
+
 }
 
 void connect_callback(uint16_t conn_handle)
