@@ -25,7 +25,7 @@ bool get_crank_force(float *force_newtons)
   
 	long reading = scale.read();
 	long tare = 37000;
-	Serial.print("torque raw: "); Serial.println(reading);
+	// Serial.print("torque raw: "); Serial.println(reading);
 	float countToKg = (10/2.2) / 121000.0; //10 pound weight
   float kg = (reading - tare) * countToKg;
 	*force_newtons = kg * 9.8;

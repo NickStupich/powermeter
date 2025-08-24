@@ -102,7 +102,9 @@ bool notify) {
   bleBuffer[7] = (timestamp >> 8) & 0xff;
 
   if(notify) {  
+    long before = millis();
     if ( power_measure_char.notify(bleBuffer, sizeof(bleBuffer)) ){
+      Serial.println(millis() - before);
       Serial.print("Power Measurement updated to: "); Serial.println(power); 
     }else{
       // Serial.println("ERROR: Notify not set in the CCCD or not connected!");

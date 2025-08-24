@@ -1,23 +1,46 @@
 
+const float smooth_power_EMA_COEF = 0.2;//TODO: what should this be?
 
-void reset_power_calculations()
+unsigned long last_call_time_micros = 0;
+void reset_power_calculations(power_state_t *power)
 {
-
+  last_call_time_micros = micros();
+  power->power_watts_raw = 0;
+  power->power_watts_smoothed = 0;
+  power->revolutions_float = 0;
+  power->revolutions_long = 0;
+  power->last_timestamp = 0;
 }
 
 void calculate_power(sensor_state_t sensors, power_state_t *power)
 {
-  power->power_watts = 2.0 * CRANK_LENGTH_MM * sensors.gyro.gyro.y * sensors.force_newtons / 1000.0;
-  power->revolutions = 0;
-  power->last_timestamp = 0;
+  unsigned long current_call_time_micros = micros();
 
+  unsigned long elapsed_micros = current_call_time_micros - last_call_time_micros;
+
+  float gyro_rad_per_s = sensors.gyro.gyro.y;
+
+  power->power_watts_raw = 2.0 * CRANK_LENGTH_MM * gyro_rad_per_s * sensors.force_newtons / 1000.0;
+  power->power_watts_smoothed = power->power_watts_smoothed * (1 - smooth_power_EMA_COEF) + power->power_watts_raw * smooth_power_EMA_COEF;
+  power->revolutions_float += gyro_rad_per_s * ((float)elapsed_micros) / (2*PI*1000000.0);
+
+  long new_revolutions_long = (long)power->revolutions_float;
+  if((new_revolutions_long+power->revolutions_long) % 2 == 1) {
+    power->last_timestamp = millis(); //todo: interpolate this for better accuracy
+  }
+  power->revolutions_long = new_revolutions_long;
+
+  last_call_time_micros = current_call_time_micros;
 
   if(true) {  
-    Serial.print(sensors.gyro.gyro.x); Serial.print("\t");
-    Serial.print(sensors.gyro.gyro.y);Serial.print("\t");
-    Serial.print(sensors.gyro.gyro.z);Serial.print("\t");
-    Serial.print(sensors.force_newtons);Serial.print("\t");
-    Serial.print(power->power_watts);Serial.print("\t");
+    // Serial.print(sensors.gyro.gyro.x); Serial.print("\t");
+    // Serial.print(sensors.gyro.gyro.y);Serial.print("\t");
+    // Serial.print(sensors.gyro.gyro.z);Serial.print("\t");
+    // Serial.print(sensors.force_newtons);Serial.print("\t");
+    Serial.print(power->revolutions_float);Serial.print("\t");
+    Serial.print(power->revolutions_long);Serial.print("\t");
+    Serial.print(power->last_timestamp);Serial.print("\t");
+    Serial.print(power->power_watts_raw);Serial.print("\t");
     Serial.println();
   }
 }

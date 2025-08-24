@@ -18,10 +18,16 @@ struct sensor_state_t {
 };
 
 struct power_state_t {
-  float power_watts = 0;
-  long revolutions = 0;
+  float power_watts_raw = 0;
+  float power_watts_smoothed = 0;
+  float revolutions_float = 0;
+  long revolutions_long = 0;
   long last_timestamp = 0;
 };
+
+
+sensor_state_t sensors;
+power_state_t power;
 
 void setup() {
   Serial.begin(115200);
@@ -32,7 +38,7 @@ void setup() {
   //start in active mode
   start_ble_advertising();
   
-  reset_power_calculations();
+  reset_power_calculations(&power);
   start_imu();
   start_torque_sensor();
   
@@ -40,10 +46,10 @@ void setup() {
   Serial.println("Done setup");
 }
 
+long loop_count = 0;
 void loop() {
+  loop_count++;
 
-  sensor_state_t sensors;
-  power_state_t power;
 
   //TODO: update imu/power/ble more often than crank force?
   if(get_crank_force(&sensors.force_newtons)) {
@@ -55,7 +61,8 @@ void loop() {
       go_to_sleep();
     }
 
-    update_power_and_cadence(power.power_watts, power.revolutions, power.last_timestamp);
+    if(loop_count % 10 == 0)
+      update_power_and_cadence(power.power_watts_smoothed, power.revolutions_long, power.last_timestamp);
 
   }
   else {
