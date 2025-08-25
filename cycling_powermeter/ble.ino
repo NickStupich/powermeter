@@ -106,7 +106,7 @@ bool notify) {
   if(notify) {  
     long before = millis();
     if ( power_measure_char.notify(bleBuffer, sizeof(bleBuffer)) ){
-      Serial.println(millis() - before);
+      // Serial.println(millis() - before);
       Serial.print("Power Measurement updated to: "); Serial.println(power); 
     }else{
       // Serial.println("ERROR: Notify not set in the CCCD or not connected!");
@@ -171,7 +171,7 @@ void calibration_write_callback(uint16_t conn_hdl, BLECharacteristic* chr, uint8
       tare_torque_sensor();
       zero_imu();
       break;
-      
+
     case 1:
       Serial.println("Weight calibration command");
       if(len < 3) {

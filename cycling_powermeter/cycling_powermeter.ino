@@ -11,6 +11,10 @@ const int LOADCELL_DOUT_PIN = 9;
 const int LOADCELL_SCK_PIN = 10;
 const int WAKE_PIN = 2;
 
+const int SENSORS_SAMPLES_PER_SEC = 83; //found experimentally. datasheet says 80, weird
+const int GATT_UPDATES_PER_SEC = 3;
+const int SENSOR_UPDATES_PER_GATT = (SENSORS_SAMPLES_PER_SEC / GATT_UPDATES_PER_SEC);
+
 const float CRANK_LENGTH_MM = 170;
 
 struct sensor_state_t {
@@ -20,6 +24,8 @@ struct sensor_state_t {
 
 struct power_state_t {
   float power_watts_raw = 0;
+  float power_watts_buffer[SENSOR_UPDATES_PER_GATT];
+  int power_buffer_index = 0;
   float power_watts_smoothed = 0;
   float revolutions_float = 0;
   long revolutions_long = 0;
@@ -36,9 +42,11 @@ struct calibration_settings_t {
 sensor_state_t sensors;
 power_state_t power;
 calibration_settings_t calibration;
-
+time_t setup_complete_time;
 
 void setup() {
+  delay(500);
+
   Serial.begin(115200);
 
   for(int i=0;i<100 && !Serial;i++)
@@ -57,36 +65,43 @@ void setup() {
   start_imu();
   start_torque_sensor();
   
-
+  setup_complete_time = millis();
   Serial.println("Done setup");
+  
 }
 
 long loop_count = 0;
+time_t last_loop_time = millis();
 void loop() {
-  loop_count++;
 
 
   //TODO: update imu/power/ble more often than crank force?
   if(get_crank_force(&sensors.force_newtons)) {
+    
+    loop_count++;
     get_imu_reading(&sensors.accel, &sensors.gyro);
 
-    calculate_power(sensors, &power);
 
     if(is_time_to_sleep()) {
       go_to_sleep();
     }
 
-    if(loop_count % 10 == 0)
-      update_power_and_cadence(power.power_watts_smoothed, power.revolutions_long, power.last_timestamp);
 
+    if(calculate_power(sensors, &power)) {
+      update_power_and_cadence(power.power_watts_smoothed, power.revolutions_long, power.last_timestamp);
+    }
+    
+    if(loop_count % 100 == 0) {
+      float sps = 1000.0 * (float)loop_count / (millis() - setup_complete_time);
+      Serial.print("SPS:\t"); Serial.println(sps);
+    }
   }
   else {
     //Serial.println("No force");
   }
 
-  delay(10);
+  delay(2);
   
-
 
 }
 
