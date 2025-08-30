@@ -16,6 +16,10 @@ void start_torque_sensor(void)
 	
 }
 
+void power_off_torque_sensor(void) {
+	scale.power_down();
+}
+
 void tare_torque_sensor(void) {
 	long reading = scale.read_average(50);
 	calibration.strain_gauge_offset = reading;

@@ -1,4 +1,4 @@
-#include <Adafruit_MPU6050.h>
+#include "Adafruit_MPU6050.h"
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
 
@@ -6,7 +6,6 @@ Adafruit_MPU6050 mpu;
 
 void start_imu(void)
 {
-
   // Try to initialize!
   if (!mpu.begin()) {
     Serial.println("Failed to find MPU6050 chip");
@@ -15,6 +14,10 @@ void start_imu(void)
     }
   }
   Serial.println("MPU6050 Found!");
+  
+  // mpu.reset();
+  // delay(100);
+
 
   mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
   Serial.print("Accelerometer range set to: ");
@@ -49,7 +52,7 @@ void start_imu(void)
     break;
   }
 
-  mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
+  mpu.setFilterBandwidth(MPU6050_BAND_94_HZ);
   Serial.print("Filter bandwidth set to: ");
   switch (mpu.getFilterBandwidth()) {
   case MPU6050_BAND_260_HZ:
@@ -102,5 +105,21 @@ void zero_imu(void)
 
 void setup_motion_detection_wakeup_pin(void) 
 {
+  //mpu.setLowPowerAccel(MPU6050_CYCLE_5_HZ);
 
+  mpu.setInterruptPinPolarity(false);
+  mpu.setInterruptPinLatch(true);
+
+  mpu.setMotionDetectionThreshold(1); // Set your desired motion detection threshold
+  mpu.setMotionDetectionDuration(5); // Set the duration for motion detection
+  mpu.setMotionInterrupt(true); // Enable the interrupt on motion detection
+
+
+  mpu.setGyroStandby(true, true, true);
+  mpu.setTemperatureStandby(true);
+  // mpu.setCycleRate(MPU6050_CYCLE_5_HZ);
+  // mpu.enableCycle(true);
+
+
+  Serial.println("motion interrupt enabled");
 }

@@ -18,7 +18,7 @@ bool calculate_power(sensor_state_t sensors, power_state_t *power)
 
   unsigned long elapsed_micros = current_call_time_micros - last_call_time_micros;
 
-  float gyro_rad_per_s = sensors.gyro.gyro.y - calibration.gyro_offset;
+  float gyro_rad_per_s = -(sensors.gyro.gyro.y - calibration.gyro_offset);
 
   power->power_watts_raw = 2.0 * CRANK_LENGTH_MM * gyro_rad_per_s * sensors.force_newtons / 1000.0;
   power->power_watts_buffer[power->power_buffer_index] = power->power_watts_raw;
@@ -35,6 +35,7 @@ bool calculate_power(sensor_state_t sensors, power_state_t *power)
   }
   
   power->revolutions_float += gyro_rad_per_s * ((float)elapsed_micros) / (2*PI*1000000.0);
+  // Serial.print("Rev: "); Serial.println(power->revolutions_float);
 
   long new_revolutions_long = (long)power->revolutions_float;
   if((new_revolutions_long+power->revolutions_long) % 2 == 1) {
@@ -56,9 +57,9 @@ bool calculate_power(sensor_state_t sensors, power_state_t *power)
     Serial.println();
   }
   
-    if(has_new_smoothed_value) {
-      Serial.print("Smoothed:\t"); Serial.println(power->power_watts_smoothed);
-    }
+    // if(has_new_smoothed_value) {
+    //   Serial.print("Smoothed:\t"); Serial.println(power->power_watts_smoothed);
+    // }
 
   return has_new_smoothed_value;
 }

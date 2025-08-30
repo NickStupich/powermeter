@@ -26,6 +26,9 @@ void update_power_and_cadence(float _power, long _revolutions, long _timestamp)
     short power = (short) fabs(_power);
     unsigned short revolutions = (unsigned short) _revolutions;
     unsigned short timestamp = (unsigned short) _timestamp;
+
+    // Serial.print("Rev:\t"); Serial.print(revolutions); Serial.print("\tTimestamp:\t"); Serial.println(timestamp);
+
     if ( Bluefruit.connected() ) {
       updatePowerMeasureChar(power, revolutions, timestamp, true);
     }
@@ -37,6 +40,7 @@ void start_ble_advertising()
 
   // Initialise the Bluefruit module
   Serial.println("Initialise the Bluefruit nRF52 module");
+  // Bluefruit.configPrphBandwidth(BANDWIDTH_MAX);
   Bluefruit.begin();
 
   Bluefruit.setTxPower(8);
@@ -107,7 +111,7 @@ bool notify) {
     long before = millis();
     if ( power_measure_char.notify(bleBuffer, sizeof(bleBuffer)) ){
       // Serial.println(millis() - before);
-      Serial.print("Power Measurement updated to: "); Serial.println(power); 
+      // Serial.print("Power Measurement updated to: "); Serial.println(power); 
     }else{
       // Serial.println("ERROR: Notify not set in the CCCD or not connected!");
     }
@@ -121,12 +125,15 @@ bool notify) {
 void setupPM(void)
 {
   power_service.begin();
+  
+  Serial.println("power service began");
 
   power_measure_char.setProperties(CHR_PROPS_NOTIFY | CHR_PROPS_READ);
   power_measure_char.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
   power_measure_char.setFixedLen(8);
   power_measure_char.setCccdWriteCallback(cccd_callback);  // Optionally capture CCCD updates //TODO??
   power_measure_char.begin();
+  Serial.println("power measure char began");
 
   
   updatePowerMeasureChar(0,0,0,false);
@@ -138,6 +145,7 @@ void setupPM(void)
   power_feature_char.begin();
   unsigned char fBuffer[4] = {0x00, 0x00, 0x00, 0x08}; //Crank revolution data supported. nothing else
   power_feature_char.write(fBuffer, 4);
+  Serial.println("power feature char began");
 
 
   
@@ -147,12 +155,14 @@ void setupPM(void)
   sensor_loc_char.begin();
   unsigned char slBuffer[1] = {sensorlocation};
   sensor_loc_char.write(slBuffer, 1);
+  Serial.println("sensor loc char began");
 
   calibration_char.setProperties(CHR_PROPS_WRITE);
   calibration_char.setPermission(SECMODE_OPEN, SECMODE_OPEN);
   calibration_char.setWriteCallback(calibration_write_callback);
   calibration_char.setMaxLen(20);
   calibration_char.begin();
+  Serial.println("calibration char began");
 }
 
 void calibration_write_callback(uint16_t conn_hdl, BLECharacteristic* chr, uint8_t* data, uint16_t len)
