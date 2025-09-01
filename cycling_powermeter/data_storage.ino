@@ -1,5 +1,4 @@
-#include <Adafruit_LittleFS.h>
-#include <InternalFileSystem.h>
+
 #include <Adafruit_TinyUSB.h> // for Serial
 
 using namespace Adafruit_LittleFS_Namespace;

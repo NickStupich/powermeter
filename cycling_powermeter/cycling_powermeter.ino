@@ -2,8 +2,14 @@
 #include "Adafruit_TinyUSB.h"
 #include "Adafruit_MPU6050.h"
 #include <Adafruit_Sensor.h>
+#include <Adafruit_LittleFS.h>
+#include <InternalFileSystem.h>
+
 
 #include "HX711.h"
+
+
+using namespace Adafruit_LittleFS_Namespace;
 
 void data_storage_init(); //TODO: why is this needed??
 
@@ -56,6 +62,8 @@ void setup() {
   Serial.println("Nick's Powermeter!");
 
   data_storage_init();
+  data_recorder_init();
+  
   load_calibration();
 
   //start in active mode
@@ -74,22 +82,22 @@ long loop_count = 0;
 time_t last_loop_time = millis();
 void loop() {
 
-  /*
+  
   if(Serial.available()) {
     String command = Serial.readString();
     command = command.substring(0, command.length()-1);
     Serial.print("Read input: "); Serial.println(command);
-    if(command.equals("read")) {
-      data_recorder_read_all();
+    if(command.equals("read_raw")) {
+      data_recorder_read_all_raw();
     }
-    else if(command.equals("delete")) {
-      data_recorder_delete_all();
+    else if(command.equals("delete_raw")) {
+      data_recorder_delete_all_raw();
     }
     else {
       Serial.println("Unrecognized command");
     }
   }
-  */
+  
 
   if(get_crank_force(&sensors.force_newtons)) {
     
@@ -106,7 +114,10 @@ void loop() {
       update_power_and_cadence(power.power_watts_smoothed, power.revolutions_long, power.last_timestamp);
     }
 
-    data_recorder_add_sample();
+    data_recorder_add_raw_sample(sensors.force_newtons, 
+        sensors.accel.acceleration.x,sensors.accel.acceleration.y,sensors.accel.acceleration.z,
+        sensors.gyro.gyro.x, sensors.gyro.gyro.y, sensors.gyro.gyro.z, 
+        power.power_watts_raw);
     
     if(loop_count % 100 == 0) {
       float sps = 1000.0 * (float)loop_count / (millis() - setup_complete_time);
