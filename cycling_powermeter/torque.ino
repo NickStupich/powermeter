@@ -44,7 +44,7 @@ bool get_crank_force(float *force_newtons)
 		return false;
   
 	long reading = scale.read();
-	float newtons = (reading - calibration.strain_gauge_offset) * calibration.strain_gauge_counts_to_newtons;
+	float newtons = (reading - calibration.strain_gauge_offset) / calibration.strain_gauge_counts_to_newtons;
 	*force_newtons = newtons;
 	// Serial.print("Force: ");	Serial.println(*force_newtons);
 	

@@ -1,3 +1,7 @@
+#undef ENABLE_DATA_RECORDER
+
+
+#ifdef ENABLE_DATA_RECORDER
 
 #define RAW_FILENAME "/raw.bin"
 File raw_file(InternalFS);
@@ -106,3 +110,15 @@ void data_recorder_delete_all_ble() {
 
 
 }
+
+#else
+
+void data_recorder_init() {}
+void data_recorder_add_raw_sample(float torque, float ax, float ay, float az, float gx, float gy, float gz, float power) {}
+void data_recorder_add_ble_output(float power, float revolutions) {}
+void data_recorder_read_all_raw() {}
+void data_recorder_read_all_ble() {}
+void data_recorder_delete_all_raw() {}
+void data_recorder_delete_all_ble() {}
+
+#endif
