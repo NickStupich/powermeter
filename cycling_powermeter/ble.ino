@@ -168,6 +168,7 @@ void setupPM(void)
 void calibration_write_callback(uint16_t conn_hdl, BLECharacteristic* chr, uint8_t* data, uint16_t len)
 {
   uint16_t weight_grams;
+  uint8_t recording_state;
 
   Serial.println("calibration_write_callback()");
   if(len == 0) {
@@ -193,6 +194,13 @@ void calibration_write_callback(uint16_t conn_hdl, BLECharacteristic* chr, uint8
       Serial.println(weight_grams);
       calibrate_torque_sensor(weight_grams);
       break;
+
+    case 2:
+      Serial.println("Start recording command");
+      recording_state = data[1];
+      data_recorder_start_recording(recording_state);
+      break;
+      
 
     default:
       Serial.print("Unrecognized command: ");

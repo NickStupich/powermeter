@@ -1,7 +1,7 @@
 
 #include <Adafruit_TinyUSB.h> // for Serial
 
-using namespace Adafruit_LittleFS_Namespace;
+// using namespace Adafruit_LittleFS_Namespace;
 
 #define CALIBRATION_FILENAME "/calibration.txt"
 #define CAL_FILE_VERSION 1
@@ -11,8 +11,8 @@ void data_storage_init() {
 }
 
 void load_calibration() {
-  File calibration_file(InternalFS);
-  calibration_file.open(CALIBRATION_FILENAME, FILE_O_READ);
+  Adafruit_LittleFS_Namespace::File calibration_file(InternalFS);
+  calibration_file.open(CALIBRATION_FILENAME, Adafruit_LittleFS_Namespace::FILE_O_READ);
   if(calibration_file) {
     Serial.println("Calibration file exists");
 
@@ -47,8 +47,8 @@ void load_calibration() {
 }
 
 void save_calibration() {
-  File calibration_file(InternalFS);
-  calibration_file.open(CALIBRATION_FILENAME, FILE_O_WRITE);
+  Adafruit_LittleFS_Namespace::File calibration_file(InternalFS);
+  calibration_file.open(CALIBRATION_FILENAME, Adafruit_LittleFS_Namespace::FILE_O_WRITE);
   
   if(!calibration_file) {
     Serial.println("Failed to open cal file for writing");

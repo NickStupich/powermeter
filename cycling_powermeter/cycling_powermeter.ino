@@ -90,8 +90,11 @@ void loop() {
     if(command.equals("read_raw")) {
       data_recorder_read_all_raw();
     }
-    else if(command.equals("delete_raw")) {
-      data_recorder_delete_all_raw();
+    else if(command.equals("read_smooth")) {
+      data_recorder_read_all_smooth();
+    }
+    else if(command.equals("read_accel")) {
+      data_recorder_read_all_accel();
     }
     else {
       Serial.println("Unrecognized command");
@@ -112,23 +115,24 @@ void loop() {
 
     if(calculate_power(sensors, &power)) {
       update_power_and_cadence(power.power_watts_smoothed, power.revolutions_long, power.last_timestamp);
+      
+      data_recorder_add_smoothed_sample(power.power_watts_smoothed, power.revolutions_float);
     }
 
-    data_recorder_add_raw_sample(sensors.force_newtons, 
-        sensors.accel.acceleration.x,sensors.accel.acceleration.y,sensors.accel.acceleration.z,
-        sensors.gyro.gyro.x, sensors.gyro.gyro.y, sensors.gyro.gyro.z, 
-        power.power_watts_raw);
+    data_recorder_add_raw_sample(sensors.force_newtons, sensors.gyro.gyro.y, power.power_watts_raw);
+    data_recorder_add_accel_sample(sensors.accel.acceleration.x,sensors.accel.acceleration.y,sensors.accel.acceleration.z,
+        sensors.gyro.gyro.x, sensors.gyro.gyro.y, sensors.gyro.gyro.z);
     
-    if(loop_count % 100 == 0) {
+    if(loop_count % 1000 == 0) {
       float sps = 1000.0 * (float)loop_count / (millis() - setup_complete_time);
-      // Serial.print("SPS:\t"); Serial.println(sps);
+      Serial.print("SPS:\t"); Serial.println(sps);
     }
   }
   else {
     //Serial.println("No force");
   }
 
-  delay(2);
+  // delay(2);
   
 
 }

@@ -61,10 +61,6 @@ bool calculate_power(sensor_state_t sensors, power_state_t *power)
     //   Serial.print("Smoothed:\t"); Serial.println(power->power_watts_smoothed);
     // }
 
-    data_recorder_add_raw_sample(sensors.force_newtons, 
-        sensors.accel.acceleration.x, sensors.accel.acceleration.y, sensors.accel.acceleration.z,
-        sensors.accel.gyro.x, sensors.accel.gyro.y, sensors.accel.gyro.z, 
-        power->power_watts_raw);
 
   return has_new_smoothed_value;
 }
