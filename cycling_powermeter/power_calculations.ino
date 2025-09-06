@@ -20,7 +20,7 @@ bool calculate_power(sensor_state_t sensors, power_state_t *power)
 
   float gyro_rad_per_s = -(sensors.gyro.gyro.y - calibration.gyro_offset);
 
-  power->power_watts_raw = 2.0 * CRANK_LENGTH_MM * gyro_rad_per_s * sensors.force_newtons / 1000.0;
+  power->power_watts_raw = - 2.0 * CRANK_LENGTH_MM * gyro_rad_per_s * sensors.force_newtons / 1000.0;
   power->power_watts_buffer[power->power_buffer_index] = power->power_watts_raw;
   power->power_buffer_index++;
 

@@ -18,7 +18,7 @@ const int LOADCELL_SCK_PIN = 10;
 const int WAKE_PIN = 2;
 
 const int SENSORS_SAMPLES_PER_SEC = 83; //found experimentally. datasheet says 80, weird
-const int GATT_UPDATES_PER_SEC = 3;
+const int GATT_UPDATES_PER_SEC = 1;
 const int SENSOR_UPDATES_PER_GATT = (SENSORS_SAMPLES_PER_SEC / GATT_UPDATES_PER_SEC);
 
 const float CRANK_LENGTH_MM = 170;
@@ -119,7 +119,7 @@ void loop() {
       data_recorder_add_smoothed_sample(power.power_watts_smoothed, power.revolutions_float);
     }
 
-    data_recorder_add_raw_sample(sensors.force_newtons, sensors.gyro.gyro.y, power.power_watts_raw);
+    data_recorder_add_raw_sample(sensors.force_newtons, -sensors.gyro.gyro.y, power.power_watts_raw);
     data_recorder_add_accel_sample(sensors.accel.acceleration.x,sensors.accel.acceleration.y,sensors.accel.acceleration.z,
         sensors.gyro.gyro.x, sensors.gyro.gyro.y, sensors.gyro.gyro.z);
     
