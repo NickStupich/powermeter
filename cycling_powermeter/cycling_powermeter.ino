@@ -18,6 +18,7 @@ const int LOADCELL_SCK_PIN = 10;
 const int WAKE_PIN = 2;
 
 const int SENSORS_SAMPLES_PER_SEC = 83; //found experimentally. datasheet says 80, weird
+const int SENSORS_BUFFER_SIZE = 166;//two seconds of data
 const int GATT_UPDATES_PER_SEC = 1;
 const int SENSOR_UPDATES_PER_GATT = (SENSORS_SAMPLES_PER_SEC / GATT_UPDATES_PER_SEC);
 
@@ -30,7 +31,7 @@ struct sensor_state_t {
 
 struct power_state_t {
   float power_watts_raw = 0;
-  float power_watts_buffer[SENSOR_UPDATES_PER_GATT];
+  float power_watts_buffer[SENSOR_UPDATES_PER_GATT] = {0};
   int power_buffer_index = 0;
   float power_watts_smoothed = 0;
   float revolutions_float = 0;
