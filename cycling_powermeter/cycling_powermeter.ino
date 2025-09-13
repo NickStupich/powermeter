@@ -31,7 +31,7 @@ struct sensor_state_t {
 
 struct power_state_t {
   float power_watts_raw = 0;
-  float power_watts_buffer[SENSOR_UPDATES_PER_GATT] = {0};
+  float power_watts_buffer[SENSORS_BUFFER_SIZE] = {0};
   int power_buffer_index = 0;
   float power_watts_smoothed = 0;
   float revolutions_float = 0;
@@ -61,6 +61,7 @@ void setup() {
     delay(10); // will pause Zero, Leonardo, etc until serial console opens. but max 1 second if there's no serial link
   
   Serial.println("Nick's Powermeter!");
+  Serial.println("V1.0");
 
   data_storage_init();
   data_recorder_init();
@@ -81,6 +82,7 @@ void setup() {
 
 long loop_count = 0;
 time_t last_loop_time = millis();
+time_t last_crank_force_time;
 void loop() {
 
   
@@ -104,7 +106,7 @@ void loop() {
   
 
   if(get_crank_force(&sensors.force_newtons)) {
-    
+    last_crank_force_time = millis();
     loop_count++;
     get_imu_reading(&sensors.accel, &sensors.gyro);
 
@@ -130,7 +132,11 @@ void loop() {
     }
   }
   else {
+    if(millis() - last_crank_force_time > 2000) {
+      Serial.println("Torque sensor aint right");
+    }
     //Serial.println("No force");
+
   }
 
   // delay(2);
