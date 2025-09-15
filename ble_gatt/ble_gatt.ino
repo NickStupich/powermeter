@@ -1,11 +1,18 @@
 #include "Adafruit_TinyUSB.h"
 #include <bluefruit.h>
+#include <SoftwareSerial.h>
 
 BLEService        power_service = BLEService(UUID16_SVC_CYCLING_POWER);
 BLECharacteristic power_measure_char = BLECharacteristic(UUID16_CHR_CYCLING_POWER_MEASUREMENT);
 BLECharacteristic power_feature_char = BLECharacteristic(UUID16_CHR_CYCLING_POWER_FEATURE);
 BLECharacteristic sensor_loc_char = BLECharacteristic(UUID16_CHR_SENSOR_LOCATION);
 
+#define PIN_VBAT        (32)  // D32 battery voltage
+#define PIN_VBAT_ENABLE (14)  // D14 LOW:read anable
+#define PIN_HICHG       (22)  // D22 charge current setting LOW:100mA HIGH:50mA
+#define PIN_CHG         (23)  // D23 charge indicatore LOW:charge HIGH:no charge
+
+SoftwareSerial ser2(9,10);
 
 
 BLEBas blebas;    // BAS (Battery Service) helper class instance
@@ -70,6 +77,27 @@ void setup()
 
   Serial.begin(115200);
   // while ( !Serial ) delay(10);   // for nrf52840 with native usb
+  for(int i=0;i<100 & !Serial; i++) delay(10);
+
+  
+  ser2.begin(115200);
+  ser2.println("testtttt");
+
+  
+  pinMode(PIN_VBAT, INPUT);
+  pinMode(PIN_VBAT_ENABLE, OUTPUT);
+  pinMode(PIN_HICHG, OUTPUT);
+  pinMode(PIN_CHG, INPUT);
+
+  digitalWrite(PIN_VBAT_ENABLE, LOW); // VBAT read enable
+  digitalWrite(PIN_HICHG, LOW);       // charge current 100mA
+  
+  // initialise ADC wireing_analog_nRF52.c:73
+  analogReference(AR_DEFAULT);        // default 0.6V*6=3.6V  wireing_analog_nRF52.c:73
+  analogReadResolution(12);           // wireing_analog_nRF52.c:39
+
+  
+  digitalWrite(LED_BUILTIN, LOW);
 
   Serial.println("Bluefruit52 HRM Example");
   Serial.println("-----------------------\n");
@@ -106,7 +134,7 @@ void startAdv(void)
 
   Bluefruit.Advertising.addService(power_service);
 
-  Bluefruit.setName("Nickpower");
+  Bluefruit.setName("NP_bletest");
   Bluefruit.Advertising.addName();
   
   Bluefruit.Advertising.restartOnDisconnect(true);
@@ -221,7 +249,7 @@ void cccd_callback(uint16_t conn_hdl, BLECharacteristic* chr, uint16_t cccd_valu
 void update_adv_loop() {
   static time_t last_call = 0;
 
-  if(millis() - last_call >= 100) {
+  if(millis() - last_call >= 1000) {
     last_call = millis();
     // digitalToggle(LED_RED);
     
@@ -241,9 +269,31 @@ void update_power_calc_loop() {
   }
 }
 
+void output_battery_loop() 
+{
+  static time_t last_call = 0;
+
+  if(millis() - last_call >= 10000) {
+    last_call = millis();
+
+    int vbatt = analogRead(PIN_VBAT);
+    Serial.print(vbatt, HEX);
+    Serial.print("    ");
+    Serial.print(2.961 * 3.6 * vbatt / 4096);   // Resistance ratio 2.961, Vref = 3.6V 
+
+    ser2.println(2.961 * 3.6 * vbatt / 4096);
+    //4.11-4.12 = full charge on 400mA?
+
+
+    Serial.print("    ");
+    Serial.println(digitalRead(PIN_CHG));       // 0:charge, 1:discharge 
+  }
+}
+
 void loop()
 {
   update_power_calc_loop();
   update_adv_loop();
+  output_battery_loop();
   
 }
