@@ -6,7 +6,7 @@ import dateutil
 import numpy as np
 
 
-content = open("Evening_Ride.gpx", 'r').read()
+content = open("ride2/Afternoon_Ride.gpx", 'r').read()
 
 # content = open("C:/Users/nicks/Downloads/Afternoon_Ride (1).gpx", 'r').read(); start_time = (30*60); end_time = (91*60) #2025 seymour hill climb easy-ish
  
@@ -48,8 +48,8 @@ print(times.shape, powers.shape)
 times -= times[0]
 
 
-df_raw = pd.read_csv('raw.txt', index_col=False)
-df_smooth = pd.read_csv('smooth.txt', index_col=False)
+df_raw = pd.read_csv('ride2/raw.txt', index_col=False)
+df_smooth = pd.read_csv('ride2/smooth.txt', index_col=False)
 
 post_smoothed_times = []
 post_smoothed_powers = []
@@ -60,7 +60,7 @@ N = 83*2
 window = np.hamming(N)
 window /= np.mean(window)
 window_sum1 = window / N
-print(','.join(map(str, window_sum1)))
+# print(','.join(map(str, window_sum1)))
 for i in range(40, len(df_raw['Power'])-N, N):
 	t = np.array(df_raw['Time'])[i+N]
 	p = np.mean(np.array(df_raw['Power'])[i:i+N])
@@ -75,31 +75,54 @@ post_smoothed_times = np.array(post_smoothed_times)
 post_smoothed_powers = np.array(post_smoothed_powers)
 post_smoothed_powers_windowed = np.array(post_smoothed_powers_windowed)
 
-plt.subplot(2,2,1)
-plt.hist(np.diff(-df_smooth['Power']), bins=100); plt.grid(True)
-plt.title(np.mean(np.abs(np.diff(df_smooth['Power']))))
+if 0:
+	plt.subplot(2,2,1)
+	plt.hist(np.diff(-df_smooth['Power']), bins=100); plt.grid(True)
+	plt.title(np.mean(np.abs(np.diff(df_smooth['Power']))))
 
-plt.subplot(2,2,2)
-plt.hist(np.diff(post_smoothed_powers), bins=100); plt.grid(True)
-plt.title(np.mean(np.abs(np.diff(post_smoothed_powers))))
+	plt.subplot(2,2,2)
+	plt.hist(np.diff(post_smoothed_powers), bins=100); plt.grid(True)
+	plt.title(np.mean(np.abs(np.diff(post_smoothed_powers))))
 
-plt.subplot(2,2,3)
-plt.hist(np.diff(post_smoothed_powers_windowed), bins=100); plt.grid(True)
-plt.title('windowed' + str(np.mean(np.abs((np.diff(post_smoothed_powers_windowed))))))
+	plt.subplot(2,2,3)
+	plt.hist(np.diff(post_smoothed_powers_windowed), bins=100); plt.grid(True)
+	plt.title('windowed' + str(np.mean(np.abs((np.diff(post_smoothed_powers_windowed))))))
 
-plt.show()
+	plt.show()
+
+
+# t1 = 840
+# t2 = 1080
+
+
+t1 = 1290
+t2 = 1500
+
+n1_raw = np.where(df_raw['Time']/1000 > t1)[0][0]
+n2_raw = np.where(df_raw['Time']/1000 > t2)[0][0]
+
+interval_power_raw = np.mean(df_raw['Power'][n1_raw:n2_raw])
+print('interval_power_raw: ', interval_power_raw)
+
+
+n1_smooth = np.where(df_smooth['Time']/1000 > t1)[0][0]
+n2_smooth = np.where(df_smooth['Time']/1000 > t2)[0][0]
+
+interval_power_smooth = np.mean(df_smooth['Power'][n1_smooth:n2_smooth])
+print('interval_power_smooth: ', interval_power_smooth)
+
 
 if 1:
 	plt.subplot(3,1,1)
-	plt.plot(df_raw['Time']/1000, -df_raw['Power'], label='raw')
+	plt.plot(df_raw['Time']/1000, df_raw['Power'], label='raw')
 	plt.grid(True)
 
-	plt.plot(df_smooth['Time']/1000, -df_smooth['Power'], label='smoothed')
-	plt.plot(post_smoothed_times/1000, -post_smoothed_powers, label='Post-smoothed')
-	plt.plot(post_smoothed_times/1000, -post_smoothed_powers_windowed, label='Windowed')
+	plt.plot(df_smooth['Time']/1000, df_smooth['Power'], label='smoothed')
+	plt.plot(post_smoothed_times/1000, post_smoothed_powers, label='Post-smoothed')
+	plt.plot(post_smoothed_times/1000, post_smoothed_powers_windowed, label='Windowed')
 
 
-	plt.plot(times+36, powers, label='garmin')
+	plt.plot(times+89, powers, label='garmin')
 
 	plt.legend()
 
