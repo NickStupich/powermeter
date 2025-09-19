@@ -1,88 +1,115 @@
-#include "Adafruit_MPU6050.h"
+#include "LSM6DS3.h"
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
 
-Adafruit_MPU6050 mpu;
+LSM6DS3 myIMU(I2C_MODE, 0x6A); // IMU
 
 void start_imu(void)
 {
-  // Try to initialize!
-  if (!mpu.begin()) {
-    Serial.println("Failed to find MPU6050 chip");
-    while (1) {
-      delay(10);
-    }
-  }
-  Serial.println("MPU6050 Found!");
-  
-  // mpu.reset();
-  // delay(100);
+  uint16_t errorsAndWarnings = 0; //TODO: remove
+    uint8_t dataToWrite = 0;  //Temporary variable
 
-
-  mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
-  Serial.print("Accelerometer range set to: ");
-  switch (mpu.getAccelerometerRange()) {
-  case MPU6050_RANGE_2_G:
-    Serial.println("+-2G");
-    break;
-  case MPU6050_RANGE_4_G:
-    Serial.println("+-4G");
-    break;
-  case MPU6050_RANGE_8_G:
-    Serial.println("+-8G");
-    break;
-  case MPU6050_RANGE_16_G:
-    Serial.println("+-16G");
-    break;
-  }
-  mpu.setGyroRange(MPU6050_RANGE_1000_DEG);
-  Serial.print("Gyro range set to: ");
-  switch (mpu.getGyroRange()) {
-  case MPU6050_RANGE_250_DEG:
-    Serial.println("+- 250 deg/s");
-    break;
-  case MPU6050_RANGE_500_DEG:
-    Serial.println("+- 500 deg/s");
-    break;
-  case MPU6050_RANGE_1000_DEG:
-    Serial.println("+- 1000 deg/s");
-    break;
-  case MPU6050_RANGE_2000_DEG:
-    Serial.println("+- 2000 deg/s");
-    break;
+  if (myIMU.beginCore() != 0) {
+    Serial.println("IMU begin core error");
+  } else {
+    Serial.println("IMU OK!");
   }
 
-  mpu.setFilterBandwidth(MPU6050_BAND_94_HZ);
-  Serial.print("Filter bandwidth set to: ");
-  switch (mpu.getFilterBandwidth()) {
-  case MPU6050_BAND_260_HZ:
-    Serial.println("260 Hz");
-    break;
-  case MPU6050_BAND_184_HZ:
-    Serial.println("184 Hz");
-    break;
-  case MPU6050_BAND_94_HZ:
-    Serial.println("94 Hz");
-    break;
-  case MPU6050_BAND_44_HZ:
-    Serial.println("44 Hz");
-    break;
-  case MPU6050_BAND_21_HZ:
-    Serial.println("21 Hz");
-    break;
-  case MPU6050_BAND_10_HZ:
-    Serial.println("10 Hz");
-    break;
-  case MPU6050_BAND_5_HZ:
-    Serial.println("5 Hz");
-    break;
-  }
+    //Setup the accelerometer******************************
+    dataToWrite = 0; //Start Fresh!
+    dataToWrite |= LSM6DS3_ACC_GYRO_BW_XL_100Hz;
+    dataToWrite |= LSM6DS3_ACC_GYRO_FS_XL_16g;
+    dataToWrite |= LSM6DS3_ACC_GYRO_ODR_XL_104Hz;
+
+    //Now, write the patched together data
+    errorsAndWarnings += myIMU.writeRegister(LSM6DS3_ACC_GYRO_CTRL1_XL, dataToWrite);
+
+    
+    //Setup the gyroscope******************************
+    dataToWrite = 0; //Start Fresh!
+    dataToWrite |= LSM6DS3_ACC_GYRO_ODR_G_104Hz;
+    dataToWrite |= LSM6DS3_ACC_GYRO_FS_G_1000dps;
+    dataToWrite |= LSM6DS3_ACC_GYRO_ODR_G_104Hz;
+
+    //Now, write the patched together data
+    errorsAndWarnings += myIMU.writeRegister(LSM6DS3_ACC_GYRO_CTRL2_G, dataToWrite);
+
+    
+    // //Set the ODR bit
+    // errorsAndWarnings += myIMU.readRegister(&dataToWrite, LSM6DS3_ACC_GYRO_CTRL4_C);
+    // dataToWrite &= ~((uint8_t)LSM6DS3_ACC_GYRO_BW_SCAL_ODR_ENABLED);
+
+}
+float calcAccel( int16_t input )
+{
+  float output = (float)input * 0.061 * (16 >> 1) / 1000;
+  return output;
 }
 
+float calcGyro( int16_t input )
+{
+	uint8_t gyroRangeDivisor = 1000 / 125;
+	// if ( settings.gyroRange == 245 ) {
+	// 	gyroRangeDivisor = 2;
+	// }
+
+	float output = (float)input * 4.375F * (gyroRangeDivisor) / 1000.0F * PI / 180.0F;
+	return output;
+}
+
+
+//TODO: merge/simplify sensors_event_t* structs
 void get_imu_reading(sensors_event_t *accel, sensors_event_t *gyro)
 {
-  sensors_event_t temp;
-  mpu.getEvent(accel, gyro, &temp);
+  int errors = 0;
+  int16_t tempX, tempY, tempZ;
+  //Acelerometer axis X
+    if (myIMU.readRegisterInt16(&tempX, LSM6DS3_ACC_GYRO_OUTX_L_G) != 0) {
+        errors++;
+    }
+
+    //Acelerometer axis Y
+    if (myIMU.readRegisterInt16(&tempY, LSM6DS3_ACC_GYRO_OUTY_L_G) != 0) {
+        errors++;
+    }
+
+    //Acelerometer axis Z
+    if (myIMU.readRegisterInt16(&tempZ, LSM6DS3_ACC_GYRO_OUTZ_L_G) != 0) {
+        errors++;
+    }
+    gyro->gyro.x = calcGyro(tempX);
+    gyro->gyro.y = calcGyro(tempY);
+    gyro->gyro.z = calcGyro(tempZ);
+
+
+    // Serial.print(gyro->gyro.x); Serial.print("\t");
+    // Serial.print(gyro->gyro.y); Serial.print("\t");
+    // Serial.print(gyro->gyro.z); Serial.print("\t");    
+    // Serial.println();
+
+
+
+    if (myIMU.readRegisterInt16(&tempX, LSM6DS3_ACC_GYRO_OUTX_L_XL) != 0) {
+        errors++;
+    }
+
+    //Acelerometer axis Y
+    if (myIMU.readRegisterInt16(&tempY, LSM6DS3_ACC_GYRO_OUTY_L_XL) != 0) {
+        errors++;
+    }
+
+    //Acelerometer axis Z
+    if (myIMU.readRegisterInt16(&tempZ, LSM6DS3_ACC_GYRO_OUTZ_L_XL) != 0) {
+        errors++;
+    }
+    accel->acceleration.x = calcAccel(tempX);
+    accel->acceleration.y = calcAccel(tempY);
+    accel->acceleration.z = calcAccel(tempZ);
+
+    // Serial.print(accel->acceleration.x); Serial.print("\t");
+    // Serial.print(accel->acceleration.y); Serial.print("\t");
+    // Serial.print(accel->acceleration.z); Serial.print("\t");    
+    // Serial.println();
 }
 
 void zero_imu(void)
@@ -91,9 +118,9 @@ void zero_imu(void)
   int n = 50;
   float sum = 0;
   for(int i=0;i<n;i++) {
-    sensors_event_t temp, accel, gyro;
-    mpu.getEvent(&accel, &gyro, &temp);
-    sum += gyro.gyro.y;
+    sensors_event_t accel, gyro;
+    get_imu_reading(&accel, &gyro);
+    sum += gyro.gyro.x;
   }
 
   float average = sum / n;
@@ -103,23 +130,17 @@ void zero_imu(void)
 	save_calibration();
 }
 
-void setup_motion_detection_wakeup_pin(void) 
+void setupMotionInterrupt(void) 
 {
-  //mpu.setLowPowerAccel(MPU6050_CYCLE_5_HZ);
+  
+  myIMU.writeRegister(LSM6DS3_ACC_GYRO_CTRL3_C, 0x05);
 
-  mpu.setInterruptPinPolarity(false);
-  mpu.setInterruptPinLatch(true);
-
-  mpu.setMotionDetectionThreshold(1); // Set your desired motion detection threshold
-  mpu.setMotionDetectionDuration(5); // Set the duration for motion detection
-  mpu.setMotionInterrupt(true); // Enable the interrupt on motion detection
-
-
-  mpu.setGyroStandby(true, true, true);
-  mpu.setTemperatureStandby(true);
-  // mpu.setCycleRate(MPU6050_CYCLE_5_HZ);
-  // mpu.enableCycle(true);
-
-
-  Serial.println("motion interrupt enabled");
+  myIMU.writeRegister(LSM6DS3_ACC_GYRO_CTRL1_XL, 0x20);
+  myIMU.writeRegister(LSM6DS3_ACC_GYRO_TAP_CFG1, 0x90);
+  myIMU.writeRegister(LSM6DS3_ACC_GYRO_WAKE_UP_DUR, 0x00);
+  myIMU.writeRegister(LSM6DS3_ACC_GYRO_WAKE_UP_THS, 0x02);
+  myIMU.writeRegister(LSM6DS3_ACC_GYRO_MD1_CFG, 0x20);
+  
+  myIMU.writeRegister(LSM6DS3_ACC_GYRO_CTRL2_G, 0x00);
+  myIMU.writeRegister(LSM6DS3_ACC_GYRO_CTRL6_G, 0x10);
 }

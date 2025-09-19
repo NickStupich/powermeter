@@ -5,15 +5,9 @@ HX711 scale;
 
 void start_torque_sensor(void)
 {
-	
-  //scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
-	
-	// pinMode(LOADCELL_DOUT_PIN, OUTPUT);
-	// pinMode(LOADCELL_SCK_PIN, OUTPUT);
   scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
-	//delay(10);
-	//Serial.println("Torque sensor setup complete");
-	
+	delay(10);
+	Serial.println("Torque sensor setup complete");	
 }
 
 void power_off_torque_sensor(void) {

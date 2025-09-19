@@ -37,7 +37,6 @@ void update_power_and_cadence(float _power, long _revolutions, long _timestamp)
 
 void start_ble_advertising()
 {
-
   // Initialise the Bluefruit module
   Serial.println("Initialise the Bluefruit nRF52 module");
   // Bluefruit.configPrphBandwidth(BANDWIDTH_MAX);
@@ -66,8 +65,10 @@ void start_ble_advertising()
 }
 
 
-void stop_advertising()
+void ble_power_down()
 {
+  Bluefruit.Advertising.stop();
+  Serial.println("Stop Advertising");
   //TODO?
 }
 
@@ -82,7 +83,7 @@ void startAdv(void)
 
   Bluefruit.Advertising.addService(power_service);
 
-  Bluefruit.setName("Nickpower");
+  Bluefruit.setName("Npow_v2");
   Bluefruit.Advertising.addName();
   
   Bluefruit.Advertising.restartOnDisconnect(true);
@@ -219,6 +220,7 @@ void connect_callback(uint16_t conn_handle)
 
   Serial.print("Connected to ");
   Serial.println(central_name);
+  bleConnected = true;
 }
 
 /**
@@ -230,6 +232,7 @@ void disconnect_callback(uint16_t conn_handle, uint8_t reason)
 {
   Serial.print("Disconnected, reason = 0x"); Serial.println(reason, HEX);
   Serial.println("Advertising!");
+  bleConnected = false;
 }
 
 void cccd_callback(uint16_t conn_hdl, BLECharacteristic* chr, uint16_t cccd_value)

@@ -1,10 +1,33 @@
-#include "SdFat_Adafruit_Fork.h"
+#include "SdFat.h"
 #include <SPI.h>
 
 #include <Adafruit_SPIFlash.h>
 
+SPIFlash_Device_t const p25q16h{
+  .total_size = (1UL << 21),  // 2MiB
+  .start_up_time_us = 10000,
+  .manufacturer_id = 0x85,
+  .memory_type = 0x60,
+  .capacity = 0x15,
+  .max_clock_speed_mhz = 55,
+  .quad_enable_bit_mask = 0x02,
+  .has_sector_protection = 1,
+  .supports_fast_read = 1,
+  .supports_qspi = 1,
+  .supports_qspi_writes = 1,
+  .write_status_register_split = 1,
+  .single_status_byte = 0,
+  .is_fram = 0,
+};
+
+#define SS_SPI1 25  // Defaul SS or CS for the Onboard QSPI Flash Chip
+
+SPIClass SPI_2(NRF_SPIM0, PIN_QSPI_IO1, PIN_QSPI_SCK, PIN_QSPI_IO0);  // Onboard QSPI Flash chip
+Adafruit_FlashTransport_SPI flashTransport(PIN_QSPI_CS, SPI_2);      // CS for QSPI Flash
+
+// Adafruit_FlashTransport_QSPI flashTransport;
 // for flashTransport definition
-#include "flash_config.h"
+// #include "flash_config.h"
 
 Adafruit_SPIFlash flash(&flashTransport);
 
@@ -46,10 +69,22 @@ struct accel_data_t {
 };
 
 void data_recorder_init() {
-  if (!flash.begin()) {
+  
+  // flashTransport.runCommand(0xAB);  // SPI deep power-down command
+  // SPI.transfer(0xAB);
+
+  if (!flash.begin(&p25q16h, 1)) {
     Serial.println("Error, failed to initialize flash chip!");
+    flashTransport.runCommand(0xAB);
+    if (!flash.begin(&p25q16h, 1))
+    {
+      Serial.println("Flash.begin() failed twice");
     while (1) {
       delay(1);
+    }
+
+    } else {
+      Serial.println("Flash intialized after runCommand()");
     }
   }
   Serial.print("Flash chip JEDEC ID: 0x");

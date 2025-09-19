@@ -7,8 +7,8 @@
 #include "HX711.h"
 
 // HX711 circuit wiring
-const int LOADCELL_DOUT_PIN = 9;
-const int LOADCELL_SCK_PIN = 10;
+const int LOADCELL_DOUT_PIN = 5;
+const int LOADCELL_SCK_PIN = 6;
 
 HX711 scale;
 

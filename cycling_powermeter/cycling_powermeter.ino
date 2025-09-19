@@ -3,19 +3,19 @@
 #include "Adafruit_MPU6050.h"
 #include <Adafruit_Sensor.h>
 #include <Adafruit_LittleFS.h>
+#include "Adafruit_SPIFlash.h"
 #include <InternalFileSystem.h>
-
 
 #include "HX711.h"
 
 
 using namespace Adafruit_LittleFS_Namespace;
 
-void data_storage_init(); //TODO: why is this needed??
+bool bleConnected = false;
 
-const int LOADCELL_DOUT_PIN = 9;
-const int LOADCELL_SCK_PIN = 10;
-const int WAKE_PIN = 2;
+const int LOADCELL_DOUT_PIN = 5;
+const int LOADCELL_SCK_PIN = 6;
+#define WAKE_PIN PIN_LSM6DS3TR_C_INT1
 
 const int SENSORS_SAMPLES_PER_SEC = 83; //found experimentally. datasheet says 80, weird
 const int SENSORS_BUFFER_SIZE = 166;//two seconds of data
@@ -56,12 +56,13 @@ void setup() {
 
   Serial.begin(115200);
 
-  for(int i=0;i<100 && !Serial;i++)
+  for(int i=0;i<300 && !Serial;i++)
   // while(!Serial)
     delay(10); // will pause Zero, Leonardo, etc until serial console opens. but max 1 second if there's no serial link
   
+  digitalWrite(LED_BUILTIN, LOW); //TODO: blink for ready, solid for BLE connected
   Serial.println("Nick's Powermeter!");
-  Serial.println("V1.0");
+  Serial.println("V2.0");
 
   data_storage_init();
   data_recorder_init();
@@ -80,12 +81,26 @@ void setup() {
   
 }
 
+time_t last_blink_ms = millis();
+bool last_state = LOW;
+void blinkLED() {
+  if(bleConnected) {
+    digitalWrite(LED_BUILTIN, LOW);
+  }
+  else {
+    if(millis() - last_blink_ms > 500) {
+      digitalWrite(LED_BUILTIN, !last_state);
+      last_state = !last_state;      
+      last_blink_ms = millis();
+    }
+  }
+}
+
 long loop_count = 0;
 time_t last_loop_time = millis();
-time_t last_crank_force_time;
+time_t last_crank_force_time, last_crank_error_msg_time;
 void loop() {
 
-  
   if(Serial.available()) {
     String command = Serial.readString();
     command = command.substring(0, command.length()-1);
@@ -111,7 +126,8 @@ void loop() {
     get_imu_reading(&sensors.accel, &sensors.gyro);
 
 
-    if(is_time_to_sleep()) {
+    if(is_time_to_sleep(&sensors.accel)) {
+      Serial.println("Sleep");
       go_to_sleep();
     }
 
@@ -126,22 +142,25 @@ void loop() {
     data_recorder_add_accel_sample(sensors.accel.acceleration.x,sensors.accel.acceleration.y,sensors.accel.acceleration.z,
         sensors.gyro.gyro.x, sensors.gyro.gyro.y, sensors.gyro.gyro.z);
     
-    if(loop_count % 1000 == 0) {
+    if(loop_count % 100 == 0) {
       float sps = 1000.0 * (float)loop_count / (millis() - setup_complete_time);
-      Serial.print("SPS:\t"); Serial.println(sps);
+      // Serial.print("SPS:\t"); Serial.println(sps);
     }
   }
   else {
     if(millis() - last_crank_force_time > 2000) {
-      Serial.println("Torque sensor aint right");
+      if(millis() - last_crank_error_msg_time > 1000) {
+        Serial.println("Torque sensor aint right"); 
+        last_crank_error_msg_time = millis();
+      }
     }
     //Serial.println("No force");
 
   }
 
-  // delay(2);
-  
+  blinkLED();
 
+  delay(2);
 }
 
 
