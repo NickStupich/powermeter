@@ -5,6 +5,8 @@ BLECharacteristic power_feature_char = BLECharacteristic(UUID16_CHR_CYCLING_POWE
 BLECharacteristic sensor_loc_char = BLECharacteristic(UUID16_CHR_SENSOR_LOCATION);
 
 BLECharacteristic calibration_char = BLECharacteristic(0x1000);
+BLECharacteristic torque_char = BLECharacteristic(0x1001);
+
 
 //TODO: useful?
 BLEBas blebas;    // BAS (Battery Service) helper class instance
@@ -31,6 +33,12 @@ void update_power_and_cadence(float _power, long _revolutions, long _timestamp)
 
     if ( Bluefruit.connected() ) {
       updatePowerMeasureChar(power, revolutions, timestamp, true);
+    }
+}
+
+void update_torque(unsigned int torque) {  
+    if ( Bluefruit.connected() ) {
+      updateTorqueChar(torque, true);
     }
 }
 
@@ -123,6 +131,21 @@ bool notify) {
   }
 }
 
+void updateTorqueChar(unsigned int torque_nm, bool notify) {
+
+  unsigned char bleBuffer[4];
+  bleBuffer[3] = torque_nm & 0xff;
+  bleBuffer[2] = (torque_nm >> 8) & 0xff;
+  bleBuffer[1] = (torque_nm >> 16) & 0xff;
+  bleBuffer[0] = (torque_nm >> 24) & 0xff;
+
+  if(notify) {
+    torque_char.notify(bleBuffer, sizeof(bleBuffer));
+  } else {    
+    torque_char.write(bleBuffer, sizeof(bleBuffer)); //TODO
+  }
+}
+
 void setupPM(void)
 {
   power_service.begin();
@@ -164,6 +187,15 @@ void setupPM(void)
   calibration_char.setMaxLen(20);
   calibration_char.begin();
   Serial.println("calibration char began");
+
+  torque_char.setProperties(CHR_PROPS_NOTIFY | CHR_PROPS_READ);
+  torque_char.setPermission(SECMODE_OPEN, SECMODE_OPEN);
+  torque_char.setCccdWriteCallback(cccd_callback);  // Optionally capture CCCD updates //TODO??
+  torque_char.setFixedLen(4);
+  torque_char.begin();
+  Serial.println("torque_char began");
+  updateTorqueChar(0, false);
+  
 }
 
 void calibration_write_callback(uint16_t conn_hdl, BLECharacteristic* chr, uint8_t* data, uint16_t len)
@@ -248,6 +280,13 @@ void cccd_callback(uint16_t conn_hdl, BLECharacteristic* chr, uint16_t cccd_valu
             Serial.println("Power Measurement 'Notify' enabled");
         } else {
             Serial.println("Power Measurement 'Notify' disabled");
+        }
+    }
+    else if (chr->uuid == torque_char.uuid) {      
+        if (chr->notifyEnabled(conn_hdl)) {
+            Serial.println("Torque 'Notify' enabled");
+        } else {
+            Serial.println("Torque 'Notify' disabled");
         }
     }
 }

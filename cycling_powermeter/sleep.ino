@@ -1,7 +1,7 @@
 
 #define ACCEL_SLEEP_LIMIT_MGs (5)
-#define SLEEP_DELAY_SECONDS (10)
-// #define SLEEP_DELAY_SECONDS (5*60)
+// #define SLEEP_DELAY_SECONDS (10)
+#define SLEEP_DELAY_SECONDS (5*60)
 
 const int sleep_check_samples = 100; //check accelerations every ~1s
 float sumAccel = 0;

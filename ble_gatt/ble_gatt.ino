@@ -81,7 +81,7 @@ void setup()
 
   
   ser2.begin(115200);
-  ser2.println("testtttt");
+  // ser2.println("testtttt");
 
   
   pinMode(PIN_VBAT, INPUT);
@@ -273,7 +273,7 @@ void output_battery_loop()
 {
   static time_t last_call = 0;
 
-  if(millis() - last_call >= 10000) {
+  if(millis() - last_call >= 1000) {
     last_call = millis();
 
     int vbatt = analogRead(PIN_VBAT);

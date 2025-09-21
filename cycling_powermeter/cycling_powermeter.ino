@@ -97,6 +97,14 @@ void blinkLED() {
   }
 }
 
+time_t last_torque_ms = millis();
+void updateTorqueBLEOutput(float force_newtons) {
+  if(millis() - last_torque_ms > 500) {
+    update_torque((unsigned int)abs(force_newtons));
+    last_torque_ms = millis();
+  }
+}
+
 long loop_count = 0;
 time_t last_loop_time = millis();
 time_t last_crank_force_time, last_crank_error_msg_time;
@@ -124,6 +132,9 @@ void loop() {
   if(get_crank_force(&sensors.force_newtons)) {
     last_crank_force_time = millis();
     loop_count++;
+    
+    updateTorqueBLEOutput(sensors.force_newtons);
+
     get_imu_reading(&sensors.accel, &sensors.gyro);
 
 
