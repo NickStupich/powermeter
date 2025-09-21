@@ -35,6 +35,8 @@ void start_imu(void)
     errorsAndWarnings += myIMU.writeRegister(LSM6DS3_ACC_GYRO_CTRL2_G, dataToWrite);
 
     
+
+    
     // //Set the ODR bit
     // errorsAndWarnings += myIMU.readRegister(&dataToWrite, LSM6DS3_ACC_GYRO_CTRL4_C);
     // dataToWrite &= ~((uint8_t)LSM6DS3_ACC_GYRO_BW_SCAL_ODR_ENABLED);
@@ -135,10 +137,11 @@ void setupMotionInterrupt(void)
   
   myIMU.writeRegister(LSM6DS3_ACC_GYRO_CTRL3_C, 0x05);
 
-  myIMU.writeRegister(LSM6DS3_ACC_GYRO_CTRL1_XL, 0x20);
+
+  myIMU.writeRegister(LSM6DS3_ACC_GYRO_CTRL1_XL, 0x10); //12.5Hz
   myIMU.writeRegister(LSM6DS3_ACC_GYRO_TAP_CFG1, 0x90);
   myIMU.writeRegister(LSM6DS3_ACC_GYRO_WAKE_UP_DUR, 0x00);
-  myIMU.writeRegister(LSM6DS3_ACC_GYRO_WAKE_UP_THS, 0x02);
+  myIMU.writeRegister(LSM6DS3_ACC_GYRO_WAKE_UP_THS, 0x04);
   myIMU.writeRegister(LSM6DS3_ACC_GYRO_MD1_CFG, 0x20);
   
   myIMU.writeRegister(LSM6DS3_ACC_GYRO_CTRL2_G, 0x00);

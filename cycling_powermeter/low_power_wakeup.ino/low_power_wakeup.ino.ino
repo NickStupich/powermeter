@@ -4,28 +4,39 @@
 #include "Adafruit_SPIFlash.h"
 #include <bluefruit.h>
 
-#if defined(CUSTOM_CS) && defined(CUSTOM_SPI)
-  Adafruit_FlashTransport_SPI flashTransport(CUSTOM_CS, CUSTOM_SPI);
+  SPIFlash_Device_t const p25q16h{
+    .total_size = (1UL << 21),  // 2MiB
+    .start_up_time_us = 10000,
+    .manufacturer_id = 0x85,
+    .memory_type = 0x60,
+    .capacity = 0x15,
+    .max_clock_speed_mhz = 55,
+    .quad_enable_bit_mask = 0x02,
+    .has_sector_protection = 1,
+    .supports_fast_read = 1,
+    .supports_qspi = 1,
+    .supports_qspi_writes = 1,
+    .write_status_register_split = 1,
+    .single_status_byte = 0,
+    .is_fram = 0,
+  };
 
-#elif defined(ARDUINO_ARCH_ESP32)
-  // ESP32 use same flash device that store code.
-  // Therefore there is no need to specify the SPI and SS
-  Adafruit_FlashTransport_ESP32 flashTransport;
 
+
+#if 0
+
+  #define SS_SPI1 25  // Defaul SS or CS for the Onboard QSPI Flash Chip
+
+  SPIClass SPI_2(NRF_SPIM0, PIN_QSPI_IO1, PIN_QSPI_SCK, PIN_QSPI_IO0);  // Onboard QSPI Flash chip
+  Adafruit_FlashTransport_SPI flashTransport(PIN_QSPI_CS, SPI_2);      // CS for QSPI Flash
 #else
-  // On-board external flash (QSPI or SPI) macros should already
-  // defined in your board variant if supported
-  // - EXTERNAL_FLASH_USE_QSPI
-  // - EXTERNAL_FLASH_USE_CS/EXTERNAL_FLASH_USE_SPI
-  #if defined(EXTERNAL_FLASH_USE_QSPI)
-    Adafruit_FlashTransport_QSPI flashTransport;
 
-  #elif defined(EXTERNAL_FLASH_USE_SPI)
-    Adafruit_FlashTransport_SPI flashTransport(EXTERNAL_FLASH_USE_CS, EXTERNAL_FLASH_USE_SPI);
+      Adafruit_FlashTransport_QSPI flashTransport;
 
-  #else
-    #error No QSPI/SPI flash are defined on your board variant.h !
-  #endif
+  //     SPIClass SPI_2(NRF_SPIM0, PIN_QSPI_IO1, PIN_QSPI_SCK, PIN_QSPI_IO0);  // Onboard QSPI Flash chip
+  // Adafruit_FlashTransport_SPI flashTransport(PIN_QSPI_CS, SPI_2);      // CS for QSPI Flash
+
+
 #endif
 
 Adafruit_SPIFlash flash(&flashTransport);
@@ -56,12 +67,37 @@ void setup() {
   start_time = millis();
   Serial.begin(115200);
   
-  for(int i=0;i<100 & !Serial; i++) delay(10);
+  for(int i=0;i<500 & !Serial; i++) delay(10);
 
   pinMode(ledPin, OUTPUT); // use the LED as an output
   Wire.setClock(1000000);  // Set I2C to 1 MHz (Fast Mode Plus)
   Serial.println("Hello, I am awake!");
   myIMU.settings.gyroEnabled = 0; // Gyro currently not used, disabled to save power
+
+  bool began = flash.begin(&p25q16h, 1);
+  // bool began = flash.begin();
+  
+  Serial.print("Flash.begin(): "); Serial.println(began);
+
+  if (!began) {
+    Serial.println("Error, failed to initialize flash chip!");
+    flashTransport.runCommand(0xAB);
+    if (!flash.begin(&p25q16h, 1))
+    // if (!flash.begin())
+    {
+      Serial.println("Flash.begin() failed twice");
+      // while (1) {
+      //   delay(1);
+      // }
+    }
+    else
+    {
+      
+      Serial.println("Second Flash.begin() worked");
+    }
+  }
+
+
 
   if (myIMU.begin() != 0) {
     Serial.println("IMU error");
@@ -74,13 +110,13 @@ void setup() {
 
 void loop() {
   setLED(false);
-  Serial.print("Interrupt Counter: ");
-  Serial.println(interruptCount);
+  // Serial.print("Interrupt Counter: ");
+  // Serial.println(interruptCount);
 
-  if (interruptCount > prevInterruptCount) {
-    Serial.println("Interrupt received!");
-  }
-  prevInterruptCount = interruptCount;
+  // if (interruptCount > prevInterruptCount) {
+  //   Serial.println("Interrupt received!");
+  // }
+  // prevInterruptCount = interruptCount;
 
   // if (interruptCount >= 3) {
   if(millis() - start_time > 10000) {

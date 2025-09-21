@@ -68,8 +68,8 @@ void start_ble_advertising()
 void ble_power_down()
 {
   Bluefruit.Advertising.stop();
-  Serial.println("Stop Advertising");
-  //TODO?
+  Bluefruit.autoConnLed(false);
+  Serial.println("Stopped Advertising");
 }
 
 

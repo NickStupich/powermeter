@@ -20,10 +20,13 @@ SPIFlash_Device_t const p25q16h{
   .is_fram = 0,
 };
 
-#define SS_SPI1 25  // Defaul SS or CS for the Onboard QSPI Flash Chip
+// #define SS_SPI1 25  // Defaul SS or CS for the Onboard QSPI Flash Chip
 
-SPIClass SPI_2(NRF_SPIM0, PIN_QSPI_IO1, PIN_QSPI_SCK, PIN_QSPI_IO0);  // Onboard QSPI Flash chip
-Adafruit_FlashTransport_SPI flashTransport(PIN_QSPI_CS, SPI_2);      // CS for QSPI Flash
+// SPIClass SPI_2(NRF_SPIM0, PIN_QSPI_IO1, PIN_QSPI_SCK, PIN_QSPI_IO0);  // Onboard QSPI Flash chip
+// Adafruit_FlashTransport_SPI flashTransport(PIN_QSPI_CS, SPI_2);      // CS for QSPI Flash
+
+
+Adafruit_FlashTransport_QSPI flashTransport;
 
 // Adafruit_FlashTransport_QSPI flashTransport;
 // for flashTransport definition
@@ -69,10 +72,6 @@ struct accel_data_t {
 };
 
 void data_recorder_init() {
-  
-  // flashTransport.runCommand(0xAB);  // SPI deep power-down command
-  // SPI.transfer(0xAB);
-
   if (!flash.begin(&p25q16h, 1)) {
     Serial.println("Error, failed to initialize flash chip!");
     flashTransport.runCommand(0xAB);

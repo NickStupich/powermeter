@@ -75,6 +75,7 @@ void setup() {
   reset_power_calculations(&power);
   start_imu();
   start_torque_sensor();
+
   
   setup_complete_time = millis();
   Serial.println("Done setup");
