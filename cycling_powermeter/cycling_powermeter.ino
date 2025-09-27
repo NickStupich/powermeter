@@ -14,6 +14,8 @@ using namespace Adafruit_LittleFS_Namespace;
 bool bleConnected = false;
 BLEBas blebas;    // BAS (Battery Service) helper class instance
 
+// #define ENABLE_LED_OUTPUT
+
 const int LOADCELL_DOUT_PIN = 5;
 const int LOADCELL_SCK_PIN = 6;
 #define WAKE_PIN PIN_LSM6DS3TR_C_INT1
@@ -67,8 +69,10 @@ void setup() {
   for(int i=0;i<300 && !Serial;i++)
     delay(10); // will pause Zero, Leonardo, etc until serial console opens. but max 1 second if there's no serial link
     
-  
-  digitalWrite(LED_BUILTIN, LOW); //TODO: blink for ready, solid for BLE connected
+  #ifdef ENABLE_LED_OUTPUT
+    digitalWrite(LED_BUILTIN, LOW);
+  #endif
+
   Serial.println("Nick's Powermeter!");
   Serial.println("V2.0");
 
@@ -94,16 +98,18 @@ void setup() {
 time_t last_blink_ms = millis();
 bool last_state = LOW;
 void blinkLED() {
-  if(bleConnected) {
-    digitalWrite(LED_BUILTIN, LOW);
-  }
-  else {
-    if(millis() - last_blink_ms > 500) {
-      digitalWrite(LED_BUILTIN, !last_state);
-      last_state = !last_state;      
-      last_blink_ms = millis();
+  #ifdef ENABLE_LED_OUTPUT
+    if(bleConnected) {
+        digitalWrite(LED_BUILTIN, LOW);
     }
-  }
+    else {
+      if(millis() - last_blink_ms > 500) {
+        digitalWrite(LED_BUILTIN, !last_state);
+        last_state = !last_state;      
+        last_blink_ms = millis();
+      }
+    }
+  #endif
 }
 
 time_t last_torque_ms = millis();

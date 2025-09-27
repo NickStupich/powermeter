@@ -64,6 +64,7 @@ void go_to_sleep(void)
   ble_power_down();
   
   power_off_torque_sensor();
+  battery_monitor_sleep();
 
   pinMode(WAKE_PIN, INPUT);
   setupMotionInterrupt();

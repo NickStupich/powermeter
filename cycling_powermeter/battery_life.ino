@@ -30,9 +30,20 @@ void battery_monitor_charge_setup() {
   digitalWrite(PIN_VBAT_ENABLE, LOW); // VBAT read enable
   digitalWrite(PIN_HICHG, LOW);       // charge current 100mA
   
-  // initialise ADC wireing_analog_nRF52.c:73
+  // // initialise ADC wireing_analog_nRF52.c:73
   analogReference(AR_DEFAULT);        // default 0.6V*6=3.6V  wireing_analog_nRF52.c:73
   analogReadResolution(12);           // wireing_analog_nRF52.c:39
+}
+
+void battery_monitor_sleep() {
+  
+  digitalWrite(PIN_VBAT_ENABLE, HIGH); 
+  digitalWrite(PIN_HICHG, HIGH);       
+
+  pinMode(PIN_HICHG, INPUT);
+  pinMode(PIN_CHG, OUTPUT);
+  // pinMode(PIN_VBAT_ENABLE, INPUT);
+  // pinMode(PIN_HICHG, INPUT);
 }
 
 
