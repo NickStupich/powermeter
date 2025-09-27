@@ -12,6 +12,7 @@
 using namespace Adafruit_LittleFS_Namespace;
 
 bool bleConnected = false;
+BLEBas blebas;    // BAS (Battery Service) helper class instance
 
 const int LOADCELL_DOUT_PIN = 5;
 const int LOADCELL_SCK_PIN = 6;
@@ -21,6 +22,11 @@ const int SENSORS_SAMPLES_PER_SEC = 83; //found experimentally. datasheet says 8
 const int SENSORS_BUFFER_SIZE = 166;//two seconds of data
 const int GATT_UPDATES_PER_SEC = 1;
 const int SENSOR_UPDATES_PER_GATT = (SENSORS_SAMPLES_PER_SEC / GATT_UPDATES_PER_SEC);
+
+#define PIN_VBAT        (32)  // D32 battery voltage
+#define PIN_VBAT_ENABLE (14)  // D14 LOW:read anable
+#define PIN_HICHG       (22)  // D22 charge current setting LOW:100mA HIGH:50mA
+#define PIN_CHG         (23)  // D23 charge indicatore LOW:charge HIGH:no charge
 
 const float CRANK_LENGTH_MM = 170;
 
@@ -51,19 +57,22 @@ power_state_t power;
 calibration_settings_t calibration;
 time_t setup_complete_time;
 
+
+
 void setup() {
   delay(500);
 
   Serial.begin(115200);
 
   for(int i=0;i<300 && !Serial;i++)
-  // while(!Serial)
     delay(10); // will pause Zero, Leonardo, etc until serial console opens. but max 1 second if there's no serial link
+    
   
   digitalWrite(LED_BUILTIN, LOW); //TODO: blink for ready, solid for BLE connected
   Serial.println("Nick's Powermeter!");
   Serial.println("V2.0");
 
+  battery_life_init();
   data_storage_init();
   data_recorder_init();
   
@@ -75,12 +84,12 @@ void setup() {
   reset_power_calculations(&power);
   start_imu();
   start_torque_sensor();
-
   
   setup_complete_time = millis();
   Serial.println("Done setup");
   
 }
+
 
 time_t last_blink_ms = millis();
 bool last_state = LOW;
@@ -170,7 +179,8 @@ void loop() {
 
   }
 
-  blinkLED();
+  // blinkLED();
+  output_battery_loop();
 
   delay(2);
 }

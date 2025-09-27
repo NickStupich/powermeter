@@ -8,9 +8,6 @@ BLECharacteristic calibration_char = BLECharacteristic(0x1000);
 BLECharacteristic torque_char = BLECharacteristic(0x1001);
 
 
-//TODO: useful?
-BLEBas blebas;    // BAS (Battery Service) helper class instance
-
 
 unsigned short flags = 0x20;
 byte sensorlocation = 0x5; //left crank
@@ -91,7 +88,7 @@ void startAdv(void)
 
   Bluefruit.Advertising.addService(power_service);
 
-  Bluefruit.setName("Npow_v2");
+  Bluefruit.setName("Npow_v2.1");
   Bluefruit.Advertising.addName();
   
   Bluefruit.Advertising.restartOnDisconnect(true);
