@@ -3,6 +3,7 @@ BLEService        power_service = BLEService(UUID16_SVC_CYCLING_POWER);
 BLECharacteristic power_measure_char = BLECharacteristic(UUID16_CHR_CYCLING_POWER_MEASUREMENT);
 BLECharacteristic power_feature_char = BLECharacteristic(UUID16_CHR_CYCLING_POWER_FEATURE);
 BLECharacteristic sensor_loc_char = BLECharacteristic(UUID16_CHR_SENSOR_LOCATION);
+BLECharacteristic control_point_char = BLECharacteristic(UUID16_CHR_CYCLING_POWER_CONTROL_POINT);
 
 BLECharacteristic calibration_char = BLECharacteristic(0x1000);
 BLECharacteristic torque_char = BLECharacteristic(0x1001);
@@ -33,9 +34,9 @@ void update_power_and_cadence(float _power, long _revolutions, long _timestamp)
     }
 }
 
-void update_torque(unsigned int torque) {  
+void update_torque_force(unsigned int force_nm) {  
     if ( Bluefruit.connected() ) {
-      updateTorqueChar(torque, true);
+      updateTorqueForceChar(force_nm, true);
     }
 }
 
@@ -88,7 +89,7 @@ void startAdv(void)
 
   Bluefruit.Advertising.addService(power_service);
 
-  Bluefruit.setName("Npow_v2.1");
+  Bluefruit.setName("Npow_test");
   Bluefruit.Advertising.addName();
   
   Bluefruit.Advertising.restartOnDisconnect(true);
@@ -128,13 +129,14 @@ bool notify) {
   }
 }
 
-void updateTorqueChar(unsigned int torque_nm, bool notify) {
+void updateTorqueForceChar(unsigned int force_nm, bool notify) {
 
+  uint32_t force_g = force_nm * 101.972;
   unsigned char bleBuffer[4];
-  bleBuffer[3] = torque_nm & 0xff;
-  bleBuffer[2] = (torque_nm >> 8) & 0xff;
-  bleBuffer[1] = (torque_nm >> 16) & 0xff;
-  bleBuffer[0] = (torque_nm >> 24) & 0xff;
+  bleBuffer[3] = force_g & 0xff;
+  bleBuffer[2] = (force_g >> 8) & 0xff;
+  bleBuffer[1] = (force_g >> 16) & 0xff;
+  bleBuffer[0] = (force_g >> 24) & 0xff;
 
   if(notify) {
     torque_char.notify(bleBuffer, sizeof(bleBuffer));
@@ -149,7 +151,7 @@ void setupPM(void)
   
   Serial.println("power service began");
 
-  power_measure_char.setProperties(CHR_PROPS_NOTIFY | CHR_PROPS_READ);
+  power_measure_char.setProperties(CHR_PROPS_NOTIFY | CHR_PROPS_READ | CHR_PROPS_WRITE);
   power_measure_char.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
   power_measure_char.setFixedLen(8);
   power_measure_char.setCccdWriteCallback(cccd_callback);  // Optionally capture CCCD updates //TODO??
@@ -164,7 +166,8 @@ void setupPM(void)
   power_feature_char.setPermission(SECMODE_OPEN, SECMODE_NO_ACCESS);
   power_feature_char.setFixedLen(4);
   power_feature_char.begin();
-  unsigned char fBuffer[4] = {0x00, 0x00, 0x00, 0x08}; //Crank revolution data supported. nothing else
+  unsigned char fBuffer[4] = {0x0, 0x0, 0x08, 0x08}; //enhanced offset compensation works here
+  // unsigned char fBuffer[4] = {0x00, 0x00, 0x00, 0x08}; //Crank revolution data supported. nothing else
   power_feature_char.write(fBuffer, 4);
   Serial.println("power feature char began");
 
@@ -177,6 +180,20 @@ void setupPM(void)
   unsigned char slBuffer[1] = {sensorlocation};
   sensor_loc_char.write(slBuffer, 1);
   Serial.println("sensor loc char began");
+
+
+  control_point_char.setProperties(CHR_PROPS_WRITE | CHR_PROPS_INDICATE);
+  control_point_char.setPermission(SECMODE_OPEN, SECMODE_OPEN);
+  control_point_char.setWriteCallback(control_point_write_callback);
+  power_measure_char.setCccdWriteCallback(cccd_control_point_callback);  // Optionally capture CCCD updates //TODO??
+  control_point_char.setMaxLen(20);
+  unsigned char control_point_buffer[4] = {0,0,0,0};
+  control_point_char.write(control_point_buffer, 4);
+  control_point_char.begin();
+
+
+  Serial.println("control point char began");
+
 
   calibration_char.setProperties(CHR_PROPS_WRITE);
   calibration_char.setPermission(SECMODE_OPEN, SECMODE_OPEN);
@@ -191,10 +208,34 @@ void setupPM(void)
   torque_char.setFixedLen(4);
   torque_char.begin();
   Serial.println("torque_char began");
-  updateTorqueChar(0, false);
+  updateTorqueForceChar(0, false);
   
 }
 
+
+void control_point_write_callback(uint16_t conn_hdl, BLECharacteristic* chr, uint8_t* data, uint16_t len)
+{
+  Serial.print("control_point_write_callback[");
+  Serial.print(len); Serial.print("]:\t");
+  for(int i=0;i<len;i++) {
+    Serial.print(data[i]); Serial.print("\t");
+  }
+  Serial.println("\n");
+
+  if(data[0] == 16) //offset compensation
+  {
+      tare_torque_sensor();
+      zero_imu();
+      
+    //below doesn't work!. but getting here to do the above calibration is useful!
+    unsigned char bleBuffer[7] = {0x20,0x1,0x12,0x23, 0xab, 0xcd, 0x0};
+    if(control_point_char.indicate(bleBuffer, sizeof(bleBuffer))) {
+      Serial.println("Wrote response");
+    } else {
+      Serial.println("Failed to write repsonse");
+    }
+  }
+}
 void calibration_write_callback(uint16_t conn_hdl, BLECharacteristic* chr, uint8_t* data, uint16_t len)
 {
   uint16_t weight_grams;
@@ -262,6 +303,12 @@ void disconnect_callback(uint16_t conn_handle, uint8_t reason)
   Serial.print("Disconnected, reason = 0x"); Serial.println(reason, HEX);
   Serial.println("Advertising!");
   bleConnected = false;
+}
+
+
+void cccd_control_point_callback(uint16_t conn_hdl, BLECharacteristic* chr, uint16_t cccd_value)
+{
+    Serial.println("cccd_control_point_callback()");
 }
 
 void cccd_callback(uint16_t conn_hdl, BLECharacteristic* chr, uint16_t cccd_value)

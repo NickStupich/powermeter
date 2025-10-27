@@ -115,7 +115,7 @@ void blinkLED() {
 time_t last_torque_ms = millis();
 void updateTorqueBLEOutput(float force_newtons) {
   if(millis() - last_torque_ms > 500) {
-    update_torque((unsigned int)abs(force_newtons));
+    update_torque_force((unsigned int)abs(force_newtons));
     last_torque_ms = millis();
   }
 }

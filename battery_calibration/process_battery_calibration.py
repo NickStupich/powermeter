@@ -16,6 +16,8 @@ for i, line in enumerate(open(fn)):
 
 data = np.array(data)
 
+print('total runtime (hours) : ', (data[-1,0] - data[0,0]) / 60 / 60)
+
 plt.plot(data[:,0], data[:,2]); plt.grid(True); plt.title('time vs voltage'); plt.show()
 # plt.plot(data[:,0], data[:,1]); plt.grid(True); plt.title('time vs adc count'); plt.show() #time vs voltage
 
